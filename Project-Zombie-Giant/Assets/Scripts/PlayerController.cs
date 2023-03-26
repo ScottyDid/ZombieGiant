@@ -7,11 +7,51 @@ public class PlayerController : MonoBehaviour
 {
     public float walkSpeed = 5f;
     public float runSpeed = 8f;
+    public float jumpImpulse = 10f;
     Vector2 moveInput;
+
+    public Transform groundCheck;
+    public float groundCheckRadius;
+    public LayerMask groundLayer;
+
+    public Transform wallCheck;
+    public float wallCheckRadius;
+
+    Rigidbody2D rb;
+    Animator animator;
+    int yVelocity;
+
+    private bool _isGrounded = true;
+    private bool _isOnWall = true;
+    public bool isGrounded
+    {
+        get
+        {
+            return _isGrounded;
+        }
+        private set
+        {
+            _isGrounded = value;
+            animator.SetBool("isGrounded", value);
+        }
+    }
+
+    public bool isOnWall
+    {
+        get
+        {
+            return _isOnWall;
+        }
+        private set
+        {
+            _isOnWall = value;
+            animator.SetBool("isOnWall", value);
+        }
+    }
 
     public float currentMoveSpeed { get
         {
-            if(IsMoving)
+            if(IsMoving && !isOnWall)
             {
                 if(IsRunning)
                 {
@@ -76,8 +116,8 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    Rigidbody2D rb;
-    Animator animator;
+    
+   
 
     private void Awake()
     {
@@ -94,12 +134,15 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        isOnWall = Physics2D.OverlapCircle(wallCheck.position, wallCheckRadius, groundLayer);
     }
 
     private void FixedUpdate()
     {
         rb.velocity = new Vector2(moveInput.x * currentMoveSpeed, rb.velocity.y);
+
+        animator.SetFloat("yVelocity", rb.velocity.y);
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -134,6 +177,15 @@ public class PlayerController : MonoBehaviour
         else if(context.canceled)
         {
             IsRunning = false;
+        }
+    }
+
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        if (context.started && isGrounded)
+        {
+            animator.SetTrigger("Jump");
+            rb.velocity = new Vector2(rb.velocity.x, jumpImpulse);
         }
     }
 
